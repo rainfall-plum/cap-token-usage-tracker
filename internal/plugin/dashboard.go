@@ -180,6 +180,7 @@ func compactDashboardHTML(html string) string {
 	const requestRefresh = "refreshRequestDetails();"
 	html = strings.ReplaceAll(html, requestRefresh, "")
 	html = strings.ReplaceAll(html, "if(changedSelection)refreshRequestDetails();", "")
+	html = strings.ReplaceAll(html, "if(changedSelection)}", "}")
 
 	// Avoid reporting a hidden price subsystem as a dashboard error/status.
 	html = strings.ReplaceAll(html, "var costStatus=costs?' · '+coverageText(costs.summary)+' · '+t('status.priceBook',{revision:Number(costs.price_book_revision||0)}):' · '+t('status.costUnavailable');", "var costStatus='';")
