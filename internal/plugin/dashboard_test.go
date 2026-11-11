@@ -373,16 +373,25 @@ func TestDashboardRefreshPreservesTrendZoom(t *testing.T) {
 	}
 }
 
-func TestDashboardRefreshRetainsMatchingCostSnapshot(t *testing.T) {
+func TestCompactDashboardOmitsCostAndRequestLoads(t *testing.T) {
 	html := dashboardHTML
 	for _, required := range []string{
-		"currentCosts=null,costQuery='',costLoadError=''",
-		"render(initial,costQuery===query?currentCosts:null)",
-		"costQuery=query;costLoadError='';render(currentData,costs);",
-		"costLoadError=error.message;render(currentData,costQuery===query?currentCosts:null);",
+		"LOC compact profile",
+		".request-panel{display:none!important}",
+		"var dimensionColumns=[",
+		"{key:'source',label:'table.source'}",
 	} {
 		if !strings.Contains(html, required) {
-			t.Fatalf("dashboard refresh must retain matching cost data until its replacement arrives: %q", required)
+			t.Fatalf("compact dashboard missing expected feature %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"api(pricesURL).then(function(book)",
+		"api(costsURL+'?'+query)",
+		"loadRequests().catch(function(error){if(sequence===statsLoadSequence)",
+	} {
+		if strings.Contains(html, forbidden) {
+			t.Fatalf("compact dashboard still loads removed feature %q", forbidden)
 		}
 	}
 }
