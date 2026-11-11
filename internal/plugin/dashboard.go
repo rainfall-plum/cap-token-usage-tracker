@@ -158,7 +158,7 @@ func compactDashboardHTML(html string) string {
 
 	// Do not fetch or render cost/price data in the public compact dashboard.
 	const priceLoad = "api(pricesURL).then(function(book){if(sequence!==statsLoadSequence)return;applyPriceBook(book);renderVisuals();}).catch(function(error){if(sequence===statsLoadSequence)text('error',error.message);});"
-	const costLoad = "api(costsURL+'?'+query).then(function(costs){if(sequence!==statsLoadSequence||!currentData)return;costQuery=query;costLoadError='';render(currentData,costs);}).catch(function(error){if(sequence===statsLoadSequence){costLoadError=error.message;render(currentData,costQuery===query?currentCosts:null);}})"
+	const costLoad = "api(costsURL+'?'+query).then(function(costs){if(sequence!==statsLoadSequence||!currentData)return;costQuery=query;costLoadError='';render(currentData,costs);}).catch(function(error){if(sequence===statsLoadSequence){costLoadError=error.message;render(currentData,costQuery===query?currentCosts:null);}});"
 	html = strings.ReplaceAll(html, priceLoad, "")
 	html = strings.ReplaceAll(html, costLoad, "")
 
