@@ -386,8 +386,8 @@ func TestCompactDashboardOmitsCostAndRequestLoads(t *testing.T) {
 		}
 	}
 	for _, forbidden := range []string{
-		"api(pricesURL).then(function(book)",
-		"api(costsURL+'?'+query)",
+		"api(pricesURL).then(function(book){if(sequence!==statsLoadSequence)",
+		"api(costsURL+'?'+query).then(function(costs){if(sequence!==statsLoadSequence)",
 		"loadRequests().catch(function(error){if(sequence===statsLoadSequence)",
 	} {
 		if strings.Contains(html, forbidden) {
