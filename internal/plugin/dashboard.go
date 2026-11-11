@@ -33,6 +33,23 @@ const fullModeAPIKeyStyles = `
 @media(max-width:720px){.apikey-filter{align-items:stretch;flex-direction:column}.apikey-filter-button{width:100%;min-width:0;max-width:none}}
 `
 
+const compactDashboardStyles = `
+/* LOC compact profile: keep daily token statistics and account/model summary. */
+.cards{grid-template-columns:repeat(3,minmax(170px,1fr))}
+.cards .card:nth-child(2),
+#fullModeButton,
+#pricingButton,
+#currencyButton,
+.export-wrap,
+#resetButton,
+.advanced-grid,
+.request-panel{display:none!important}
+.dimension-panel .dimension-column-wrap{display:none!important}
+.dimension-panel .request-toolbar{justify-content:flex-end}
+.metric-switch-button[data-model-share-metric="cost"]{display:none!important}
+@media(max-width:820px){.cards{grid-template-columns:repeat(2,minmax(145px,1fr))}}
+`
+
 const fullModeAPIKeyMarkup = `<div id="apiKeyControls" class="apikey-controls"><div id="apiKeySecurityWarning" class="apikey-security-warning" role="alert" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 17h.01"></path></svg><span data-i18n="apiKey.defaultSecretWarning">The public default secret 123456 is active. Anyone who obtains the database or a backup can decrypt stored API Keys. Configure a custom secret of at least 32 bytes.</span></div></div>`
 
 const fullModeAPIKeyFilterMarkup = `<div id="apiKeyFilter" class="apikey-filter"><span id="apiKeyFilterLabel" data-i18n="apiKey.filter">API Key</span><button id="apiKeyFilterButton" class="apikey-filter-button" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="apiKeyFilterMenu"><span id="apiKeyFilterValue" class="apikey-filter-value" data-i18n="apiKey.all">All API Keys</span><span id="apiKeyFilterCount" class="apikey-filter-count" hidden></span><span class="apikey-filter-caret" aria-hidden="true">⌄</span></button><div id="apiKeyFilterMenu" class="apikey-filter-menu" role="dialog" aria-labelledby="apiKeyFilterLabel" hidden></div></div><span id="apiKeyTrackingState" class="apikey-tracking-state" hidden data-i18n="apiKey.trackingDisabled">API Key tracking is disabled.</span>`
@@ -94,6 +111,69 @@ func withoutTemplateRange(template, start, end string) string {
 	return template[:startIndex] + template[endIndex:]
 }
 
+// compactDashboardHTML creates the low-complexity public dashboard while
+// leaving the plugin ABI, persistence, and management handlers unchanged.
+// Hidden controls remain in the DOM so the upstream browser logic stays
+// structurally safe; the public page also stops issuing requests for features
+// removed from the compact view.
+func compactDashboardHTML(html string) string {
+	html = strings.Replace(html, "</style>", compactDashboardStyles+"\n</style>", 1)
+
+	// Keep the dimension summary as the compact model/account view. This avoids
+	// exposing the request-detail table while retaining source-level account
+	// statistics and all token counters.
+	const fullDimensionColumns = `var dimensionColumns=[
+{key:'model',label:'table.model'},
+{key:'provider',label:'table.provider'},
+{key:'alias',label:'table.alias'},
+{key:'source',label:'table.source'},
+{key:'executor_type',label:'table.executor'},
+{key:'auth_type',label:'table.authType'},
+{key:'service_tier',label:'table.serviceTier'},
+{key:'reasoning_effort',label:'table.reasoningEffort'},
+{key:'requests',label:'table.requests',numeric:true},
+{key:'failed_requests',label:'table.failed',numeric:true},
+{key:'input_tokens',label:'table.input',numeric:true},
+{key:'output_tokens',label:'table.output',numeric:true},
+{key:'reasoning_tokens',label:'table.reasoning',numeric:true},
+{key:'cache_read_tokens',label:'table.cacheRead',numeric:true},
+{key:'cache_creation_tokens',label:'table.cacheCreation',numeric:true},
+{key:'total_tokens',label:'table.totalTokens',numeric:true},
+{key:'average_latency_ns',label:'table.averageLatency',numeric:true},
+{key:'average_ttft_ns',label:'table.averageTTFT',numeric:true}
+]`
+	const compactDimensionColumns = `var dimensionColumns=[
+{key:'model',label:'table.model'},
+{key:'source',label:'table.source'},
+{key:'requests',label:'table.requests',numeric:true},
+{key:'failed_requests',label:'table.failed',numeric:true},
+{key:'input_tokens',label:'table.input',numeric:true},
+{key:'output_tokens',label:'table.output',numeric:true},
+{key:'reasoning_tokens',label:'table.reasoning',numeric:true},
+{key:'cache_read_tokens',label:'table.cacheRead',numeric:true},
+{key:'cache_creation_tokens',label:'table.cacheCreation',numeric:true},
+{key:'total_tokens',label:'table.totalTokens',numeric:true}
+]`
+	html = strings.ReplaceAll(html, fullDimensionColumns, compactDimensionColumns)
+
+	// Do not fetch or render cost/price data in the public compact dashboard.
+	const priceLoad = "api(pricesURL).then(function(book){if(sequence!==statsLoadSequence)return;applyPriceBook(book);renderVisuals();}).catch(function(error){if(sequence===statsLoadSequence)text('error',error.message);});"
+	const costLoad = "api(costsURL+'?'+query).then(function(costs){if(sequence!==statsLoadSequence||!currentData)return;costQuery=query;costLoadError='';render(currentData,costs);}).catch(function(error){if(sequence===statsLoadSequence){costLoadError=error.message;render(currentData,costQuery===query?currentCosts:null);}})"
+	html = strings.ReplaceAll(html, priceLoad, "")
+	html = strings.ReplaceAll(html, costLoad, "")
+
+	// Request details are intentionally not part of the compact profile. The
+	// aggregate groups request remains because it powers model/account totals.
+	const requestLoad = "loadRequests().catch(function(error){if(sequence===statsLoadSequence)text('error',error.message);});"
+	html = strings.ReplaceAll(html, requestLoad, "")
+	const requestRefresh = "refreshRequestDetails();"
+	html = strings.ReplaceAll(html, requestRefresh, "")
+
+	// Avoid reporting a hidden price subsystem as a dashboard error/status.
+	html = strings.ReplaceAll(html, "var costStatus=costs?' · '+coverageText(costs.summary)+' · '+t('status.priceBook',{revision:Number(costs.price_book_revision||0)}):' · '+t('status.costUnavailable');", "var costStatus='';")
+	return html
+}
+
 func init() {
 	localeData := make(map[string]map[string]string)
 	for _, code := range []string{"en", "zh-CN", "zh-TW", "ru"} {
@@ -126,7 +206,7 @@ func init() {
 	if err != nil {
 		panic("full-mode locale marshal failed: " + err.Error())
 	}
-	dashboardHTML = strings.NewReplacer(
+	dashboardHTML = compactDashboardHTML(strings.NewReplacer(
 		"/*LOCALE_PLACEHOLDER*/", string(publicJSONBytes),
 		"/*FULL_MODE_PAGE*/", "false",
 		"/*FULL_MODE_APIKEY_STYLES*/", "",
@@ -161,7 +241,7 @@ func init() {
 		"async function resetStats(){if(!confirm(t('confirm.reset')))return;var typed=prompt(t('confirm.typeReset'));if(typed!=='reset')return;var managementKey=await askManagementKey();if(!managementKey)return;try{await api(resetURL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+managementKey},body:JSON.stringify({confirm:'reset'})});await load();}catch(error){text('error',error.message);}}", "",
 		"document.getElementById('resetButton').addEventListener('click',resetStats);", "",
 		"tooltip=document.getElementById('tooltip'),resetDialog=document.getElementById('resetDialog'),resetKeyInput=document.getElementById('resetKeyInput'),backupDialog=", "tooltip=document.getElementById('tooltip'),backupDialog=",
-	).Replace(withoutTemplateRange(withoutTemplateRange(withoutTemplateSection(withoutTemplateSection(dashboardHTMLTemplate, pricingDialogStart, pricingDialogEnd), backupDialogStart, backupDialogEnd), exportControlsStart, exportControlsEnd), exportScriptStart, exportScriptEnd))
+	).Replace(withoutTemplateRange(withoutTemplateRange(withoutTemplateSection(withoutTemplateSection(dashboardHTMLTemplate, pricingDialogStart, pricingDialogEnd), backupDialogStart, backupDialogEnd), exportControlsStart, exportControlsEnd), exportScriptStart, exportScriptEnd)))
 	fullDashboardHTML = strings.NewReplacer(
 		"/*LOCALE_PLACEHOLDER*/", string(fullJSONBytes),
 		"/*FULL_MODE_PAGE*/", "true",
