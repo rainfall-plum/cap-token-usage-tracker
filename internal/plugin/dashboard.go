@@ -35,7 +35,7 @@ const fullModeAPIKeyStyles = `
 
 const compactDashboardStyles = `
 /* LOC compact profile: keep daily token statistics and account/model summary. */
-.cards{grid-template-columns:repeat(3,minmax(170px,1fr))}
+.cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .cards .card:nth-child(2),
 #fullModeButton,
 #pricingButton,
@@ -47,7 +47,13 @@ const compactDashboardStyles = `
 .dimension-panel .dimension-column-wrap{display:none!important}
 .dimension-panel .request-toolbar{justify-content:flex-end}
 .metric-switch-button[data-model-share-metric="cost"]{display:none!important}
-@media(max-width:820px){.cards{grid-template-columns:repeat(2,minmax(145px,1fr))}}
+.card{border-radius:14px;padding:24px}
+.card::after{display:none}
+.card:hover{transform:none;box-shadow:var(--shadow)}
+.card .value{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Microsoft YaHei",monospace;font-weight:600}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:768px){.shell{padding:18px 12px 28px}}
+@media(max-width:460px){.cards{grid-template-columns:1fr}}
 `
 
 const fullModeAPIKeyMarkup = `<div id="apiKeyControls" class="apikey-controls"><div id="apiKeySecurityWarning" class="apikey-security-warning" role="alert" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 17h.01"></path></svg><span data-i18n="apiKey.defaultSecretWarning">The public default secret 123456 is active. Anyone who obtains the database or a backup can decrypt stored API Keys. Configure a custom secret of at least 32 bytes.</span></div></div>`
