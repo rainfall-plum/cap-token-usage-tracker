@@ -54,6 +54,12 @@ const compactDashboardStyles = `
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:768px){.shell{padding:18px 12px 28px}}
 @media(max-width:460px){.cards{grid-template-columns:1fr}}
+.chart-wrap{min-height:280px}
+.chart-wrap svg{min-height:250px}
+.donut-layout{min-height:280px}
+.legend{max-height:280px}
+.empty{padding:24px!important}
+@media(max-width:560px){.chart-wrap{min-height:240px}.chart-wrap svg{min-height:210px}.donut-layout{min-height:240px}.legend{max-height:none}}
 `
 
 const fullModeAPIKeyMarkup = `<div id="apiKeyControls" class="apikey-controls"><div id="apiKeySecurityWarning" class="apikey-security-warning" role="alert" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 17h.01"></path></svg><span data-i18n="apiKey.defaultSecretWarning">The public default secret 123456 is active. Anyone who obtains the database or a backup can decrypt stored API Keys. Configure a custom secret of at least 32 bytes.</span></div></div>`
@@ -136,7 +142,11 @@ func withoutInlineRange(template, start, end string) string {
 // structurally safe; the public page also stops issuing requests for features
 // removed from the compact view.
 func compactDashboardHTML(html string) string {
-	html = strings.Replace(html, "</style>", compactDashboardStyles+"\n</style>", 1)
+	styleEnd := strings.LastIndex(html, "</style>")
+	if styleEnd < 0 {
+		panic("dashboard style block missing")
+	}
+	html = html[:styleEnd] + compactDashboardStyles + "\n</style>" + html[styleEnd+len("</style>"):]
 
 	// Keep the dimension summary as the compact model/account view. This avoids
 	// exposing the request-detail table while retaining source-level account
