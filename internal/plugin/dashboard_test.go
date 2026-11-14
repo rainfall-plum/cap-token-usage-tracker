@@ -396,6 +396,26 @@ func TestCompactDashboardOmitsCostAndRequestLoads(t *testing.T) {
 	}
 }
 
+func TestCompactDashboardUsesSharedFilterDialogAndResponsiveGrid(t *testing.T) {
+	html := dashboardHTML
+	for _, required := range []string{
+		".filter-dialog-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))",
+		".visual-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}",
+		".visual-grid .chart-panel:first-child{grid-column:span 2}",
+		"@media(max-width:900px){.visual-grid{grid-template-columns:1fr}",
+		"@media(max-width:560px){.filter-dialog-controls{grid-template-columns:1fr}",
+		"id='compactFilterControls'",
+		"id=\"sourceFilterMount\"",
+		"actions.insertBefore(rangeButton,actions.firstChild)",
+		"compactDraftSource='',compactDraftGranularity='',compactCommittedGranularity=''",
+		"event.stopImmediatePropagation();resetTrendZooms()",
+	} {
+		if !strings.Contains(html, required) {
+			t.Fatalf("compact dashboard missing filter-dialog/grid contract %q", required)
+		}
+	}
+}
+
 func TestDashboardRefreshKeepsCostSnapshotDuringRollingRangeRefresh(t *testing.T) {
 	html := dashboardHTML
 	for _, required := range []string{
