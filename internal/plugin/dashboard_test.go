@@ -682,6 +682,13 @@ func TestDashboardUsesTwoMonthLocalDateRangePicker(t *testing.T) {
 	html := dashboardHTML
 	for _, required := range []string{
 		`id="rangeButton"`,
+		`id="rangeLabel" class="range-label-full"`,
+		`id="rangeCompactLabel" class="range-label-compact" aria-hidden="true"`,
+		`.range-label-compact{display:none}`,
+		`function updateRangeButton(){var label=rangeModeLabel();text('rangeLabel',label);var compactLabel=document.getElementById('rangeCompactLabel')`,
+		`dateKey(appliedRangeStart).replaceAll('-','/')`,
+		`.control-actions>button{flex:1 1 0;min-width:0}`,
+		`.control-actions>#rangeButton{min-width:0;width:0`,
 		`aria-expanded="false" aria-controls="dateRangePopover"`,
 		`id="dateRangePopover" class="date-range-popover" role="dialog" aria-modal="false"`,
 		`id="dateRangeTitle"`,

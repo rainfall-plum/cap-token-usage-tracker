@@ -41,6 +41,7 @@ const compactDashboardStyles = `
 .filter-dialog-field{display:flex;flex-direction:column;gap:5px;min-width:0;color:var(--text-secondary);font-size:11px;font-weight:650}
 .filter-dialog-field>select,.filter-dialog-field>.enhanced-select,.filter-dialog-field>#sourceFilterMount{width:100%;min-width:0}
 .control-actions{gap:8px}
+.range-label-compact{display:none}
 .visual-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .visual-grid .chart-panel:first-child{grid-column:span 2}
 .cards .card:nth-child(2),
@@ -61,7 +62,7 @@ const compactDashboardStyles = `
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.visual-grid{grid-template-columns:1fr}.visual-grid .chart-panel:first-child{grid-column:auto}}
 @media(max-width:768px){.shell{padding:18px 12px 28px}}
-@media(max-width:560px){.filter-dialog-controls{grid-template-columns:1fr}.control-actions{gap:8px}}
+@media(max-width:560px){.filter-dialog-controls{grid-template-columns:1fr}.control-actions{gap:8px;width:100%;min-width:0}.control-actions>button{flex:1 1 0;min-width:0}.control-actions>#rangeButton{min-width:0;width:0;justify-content:center!important;overflow:hidden}.control-actions>#rangeButton .button-icon{flex:0 0 17px}.range-label-full{display:none}.range-label-compact{display:inline;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 @media(max-width:460px){.cards{grid-template-columns:1fr}}
 .chart-wrap{min-height:280px}
 .chart-wrap svg{min-height:250px}
@@ -156,6 +157,10 @@ func compactDashboardHTML(html string) string {
 		panic("dashboard style block missing")
 	}
 	html = html[:styleEnd] + compactDashboardStyles + "\n</style>" + html[styleEnd+len("</style>"):]
+	html = strings.ReplaceAll(html,
+		`<span id="rangeLabel">Today</span>`,
+		`<span id="rangeLabel" class="range-label-full">Today</span><span id="rangeCompactLabel" class="range-label-compact" aria-hidden="true"></span>`,
+	)
 
 	// Keep the dimension summary as the compact model/account view. This avoids
 	// exposing the request-detail table while retaining source-level account
@@ -263,6 +268,7 @@ func init() {
 		"/*FULL_MODE_APIKEY_LANGUAGE*/", "",
 		"/*FULL_MODE_APIKEY_SCRIPT*/", "",
 		"function openDateRange(){closeActiveDropdown(false);closeExportMenu();", "function openDateRange(){closeActiveDropdown(false);if(typeof closeExportMenu==='function')closeExportMenu();",
+		"function updateRangeButton(){var label=rangeModeLabel();text('rangeLabel',label);document.getElementById('range').value=dateRangeFilePart();updateQuickRangeState();if(currentData)currentData.range=label;}", "function updateRangeButton(){var label=rangeModeLabel();text('rangeLabel',label);var compactLabel=document.getElementById('rangeCompactLabel');if(compactLabel){var compactDate=appliedRangeStart?dateKey(appliedRangeStart).replaceAll('-','/'):dateKey(new Date()).replaceAll('-','/');compactLabel.textContent=compactDate;}document.getElementById('range').value=dateRangeFilePart();updateQuickRangeState();if(currentData)currentData.range=label;}",
 		`<button id="pricingButton" class="control" type="button" title="Configure model prices" data-i18n-title="button.pricing.title" hidden><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 6v12M15 8.5h-4.5a2.2 2.2 0 0 0 0 4.4h3a2.2 2.2 0 0 1 0 4.4H9"></path></svg><span class="button-label" data-i18n="button.pricing">Model prices</span></button>`, "",
 		"document.getElementById('pricingButton').addEventListener('click',openPricing);", "if(pricingDialog){document.getElementById('pricingButton').addEventListener('click',openPricing);",
 		"document.getElementById('syncPrices').addEventListener('click',function(){syncPricing().catch(function(error){text('priceError',error.message);});});", "document.getElementById('syncPrices').addEventListener('click',function(){syncPricing().catch(function(error){text('priceError',error.message);});});}",
