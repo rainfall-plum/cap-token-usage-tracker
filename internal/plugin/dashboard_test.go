@@ -405,7 +405,7 @@ func TestCompactDashboardUsesSharedFilterDialogAndResponsiveGrid(t *testing.T) {
 		"@media(max-width:900px){.visual-grid{grid-template-columns:1fr}",
 		"@media(max-width:560px){.filter-dialog-controls{grid-template-columns:1fr}",
 		"id='compactFilterControls'",
-		"id=\"sourceFilterMount\"",
+		"sourceMount.id='sourceFilterMount'",
 		"actions.insertBefore(rangeButton,actions.firstChild)",
 		"compactDraftSource='',compactDraftGranularity='',compactCommittedGranularity=''",
 		"event.stopImmediatePropagation();resetTrendZooms()",
